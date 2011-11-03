@@ -1,0 +1,5 @@
+#PulseLauncherGrid
+
+The Pulse Launcher Grid is a Three20-like launcher for android.  It allows you to use a normal android GridLayout and make a launcher that supports drag
+and drop to move items around (and delete them) as well as persisting the launcher items.  To get started, simply add a collection of LauncherGridItem objects
+to a list and then use the LauncherGridAdapter to get the "launcher" functionality.  A sample project is in the works, this was created from the Neudesic Pulse android app.
