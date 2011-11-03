@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.neudesic.mobile.ui.drag.DraggableRelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="wrap_content" android:layout_height="wrap_content"
+	android:orientation="vertical" >
+	<ImageView android:id="@+id/selection_item_image"
+		android:src="@drawable/avatar" android:layout_width="wrap_content"
+		android:layout_height="96dip" android:layout_centerHorizontal="true" />
+	<TextView android:layout_width="wrap_content" android:id="@+id/selection_item_text"
+	android:maxLines="1" android:lines="1" android:scrollHorizontally="true" android:ellipsize="end" 
+	 android:layout_height="wrap_content" android:textColor="@android:color/black" 
+	 android:text="(Selection Text)" android:layout_alignBottom="@+id/selection_item_image"  android:layout_centerHorizontal="true"
+	 ></TextView>
+</com.neudesic.mobile.ui.drag.DraggableRelativeLayout>
