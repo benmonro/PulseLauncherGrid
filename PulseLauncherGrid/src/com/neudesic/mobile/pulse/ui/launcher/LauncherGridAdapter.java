@@ -103,15 +103,17 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		this.setDrawableManager(new DrawableManager(c));
 
 		dragController = new DragController(context);
+		this.dragLayer = dragLayer;
+		this.dragLayer.setDragController(dragController);
+		this.dragLayer.setGridView(iconGrid);
+		
 		if (deleteZone != null) {
 			this.deleteZone = deleteZone;
 			this.deleteZone.setOnItemDeleted(this);
 			this.deleteZone.setEnabled(true);
 			this.dragLayer.setDeleteZoneId(deleteZone.getId());
 		}
-		this.dragLayer = dragLayer;
-		this.dragLayer.setDragController(dragController);
-		this.dragLayer.setGridView(iconGrid);
+
 
 		dragController.setDragListener(dragLayer);
 
