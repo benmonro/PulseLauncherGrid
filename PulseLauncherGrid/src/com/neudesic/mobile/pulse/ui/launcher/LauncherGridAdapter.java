@@ -71,8 +71,6 @@ public class LauncherGridAdapter extends BaseAdapter implements
 	
 	private ObjectMapper mapper;
 
-	private int deleteZoneDrawableId;
-
 	static class ViewHolder {
 
 		public ImageView image;
@@ -84,7 +82,10 @@ public class LauncherGridAdapter extends BaseAdapter implements
 
 	}
 
-	
+	public LauncherGridAdapter(Context c, List<LauncherGridItem> items,
+			GridView iconGrid, DragLayer dragLayer) {
+		this(c, items, iconGrid, dragLayer, null);
+	}
 	
 	public LauncherGridAdapter(Context c, List<LauncherGridItem> items,
 			GridView iconGrid, DragLayer dragLayer, DeleteZone deleteZone) {
@@ -102,12 +103,14 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		this.setDrawableManager(new DrawableManager(c));
 
 		dragController = new DragController(context);
-		this.deleteZone = deleteZone;
-		this.deleteZone.setOnItemDeleted(this);
-		this.deleteZone.setEnabled(true);
+		if (deleteZone != null) {
+			this.deleteZone = deleteZone;
+			this.deleteZone.setOnItemDeleted(this);
+			this.deleteZone.setEnabled(true);
+			this.dragLayer.setDeleteZoneId(deleteZone.getId());
+		}
 		this.dragLayer = dragLayer;
 		this.dragLayer.setDragController(dragController);
-		this.dragLayer.setDeleteZoneId(getDeleteZoneDrawableId());
 		this.dragLayer.setGridView(iconGrid);
 
 		dragController.setDragListener(dragLayer);
@@ -330,13 +333,6 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		this.persistenceToken = persistenceToken;
 	}
 
-	public int getDeleteZoneDrawableId() {
-		return deleteZoneDrawableId;
-	}
-
-	public void setDeleteZoneDrawableId(int deleteZoneDrawableId) {
-		this.deleteZoneDrawableId = deleteZoneDrawableId;
-	}
 
 	@JsonIgnore
 	public boolean isEditable() {
