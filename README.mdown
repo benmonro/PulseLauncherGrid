@@ -2,7 +2,10 @@
 
 The Pulse Launcher Grid is a Three20-like launcher for android.  It allows you to use a normal android GridLayout and make a launcher that supports drag
 and drop to move items around (and delete them) as well as persisting the launcher items.  To get started, simply add a collection of LauncherGridItem objects
-to a list and then use the LauncherGridAdapter to get the "launcher" functionality.  A sample project is in the works, this was created from the Neudesic Pulse android app.
+to a list and then use the LauncherGridAdapter to get the "launcher" functionality.  
+
+Note: unfortunately, android library projects with references to external jars require you to add references to those jars in the project using the library project.
+As a result, when you add the android library reference for PulseLauncherGrid to your project, be sure to add the 'libs/*.jar' files to your project references.
 
 The drag & drop portion of this control is based on [this blog post][bills_post] by Bill Lahti (Thanks Bill)
 
