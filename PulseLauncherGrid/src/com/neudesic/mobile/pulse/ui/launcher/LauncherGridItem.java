@@ -98,6 +98,10 @@ public class LauncherGridItem {
 	public boolean equals(Object o) {
 		if (o instanceof LauncherGridItem) {
 			LauncherGridItem other = (LauncherGridItem) o;
+			if(this.intentUrl == null || other.intentUrl == null)
+			{
+				return super.equals(o);
+			}
 			try {
 				Intent a = Intent.parseUri(this.intentUrl,
 						Intent.URI_INTENT_SCHEME);

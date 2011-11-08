@@ -1,5 +1,6 @@
 package com.neudesic.mobile.pulse.ui.launcher;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -69,7 +70,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 	@JsonIgnore
 	private boolean editable = true;
 	
-	private ObjectMapper mapper;
+	private static ObjectMapper mapper;
 
 	static class ViewHolder {
 
@@ -95,9 +96,9 @@ public class LauncherGridAdapter extends BaseAdapter implements
 
 		inflater = (LayoutInflater) context
 				.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		mapper = new ObjectMapper();
+		setMapper(new ObjectMapper());
 
-		mapper.configure(
+		getMapper().configure(
 				DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 		this.setDrawableManager(new DrawableManager(c));
@@ -124,7 +125,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		this.drawableManager.setHttpClient(client);
 	}
 
-
+	
 	public void persist() {
 		LauncherGridItemList list = new LauncherGridItemList(this.items);
 		SharedPreferences prefs = PreferenceManager
@@ -133,7 +134,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		Editor editor = prefs.edit();
 		String message = "";
 		try {
-			message = mapper.writeValueAsString(list);
+			message = getMapper().writeValueAsString(list);
 		} catch (Exception e) {
 			Log.w(LAUNCHER_GRID_LOG, "Unable to serialize launcher grid", e);
 		}
@@ -141,13 +142,51 @@ public class LauncherGridAdapter extends BaseAdapter implements
 
 		editor.commit();
 	}
+	
+
+
+	public static void persist(Context context, String persistenceToken, List<LauncherGridItem> items)
+	{
+		LauncherGridItemList list = new LauncherGridItemList(items);
+		SharedPreferences prefs = PreferenceManager
+				.getDefaultSharedPreferences(context);
+
+		Editor editor = prefs.edit();
+		String message = "";
+		try {
+			message = getMapper().writeValueAsString(list);
+		} catch (Exception e) {
+			Log.w(LAUNCHER_GRID_LOG, "Unable to serialize launcher grid", e);
+		}
+		editor.putString(persistenceToken, message);
+
+		editor.commit();
+	}
+	
+	public static List<LauncherGridItem> loadItems(Context context, String persistenceToken)
+	{
+		SharedPreferences prefs = PreferenceManager
+				.getDefaultSharedPreferences(context);
+		if (prefs.contains(persistenceToken)) {
+			try {
+
+				LauncherGridItemList list = getMapper().readValue(
+						prefs.getString(persistenceToken, ""),
+						LauncherGridItemList.class);
+				return list.getItems();
+			} catch (Exception e) {
+				
+			}
+		}
+		return new ArrayList<LauncherGridItem>();
+	}
 
 	public boolean restore() {
 		SharedPreferences prefs = PreferenceManager
 				.getDefaultSharedPreferences(context);
 		if (prefs.contains(getPersistenceToken())) {
 			try {
-				LauncherGridItemList list = mapper.readValue(
+				LauncherGridItemList list = getMapper().readValue(
 						prefs.getString(getPersistenceToken(), ""),
 						LauncherGridItemList.class);
 				this.items = list.getItems();
@@ -354,6 +393,21 @@ public class LauncherGridAdapter extends BaseAdapter implements
 	@JsonIgnore
 	public void setDrawableManager(DrawableManager drawableManager) {
 		this.drawableManager = drawableManager;
+	}
+
+	public static ObjectMapper getMapper() {
+		if(mapper == null)
+		{
+			mapper = new ObjectMapper();
+
+			mapper.configure(
+					DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		}
+		return mapper;
+	}
+
+	public static void setMapper(ObjectMapper mapper) {
+		LauncherGridAdapter.mapper = mapper;
 	}
 
 }
