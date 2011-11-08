@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent" android:layout_height="fill_parent"
+	android:orientation="vertical" android:background="#CCCCCC">
+
+
+	<com.neudesic.mobile.ui.drag.DragLayer
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		xmlns:launcher="http://schemas.android.com/apk/res/com.android.launcher"
+		android:id="@+id/drag_layer" android:layout_width="fill_parent"
+		android:layout_height="fill_parent" android:layout_above="@+id/handle">
+
+		<GridView android:id="@+id/grid" android:layout_width="fill_parent"
+			android:layout_height="fill_parent" android:layout_marginBottom="65dip"
+			android:numColumns="3" android:scrollbars="vertical"  />
+
+		<com.neudesic.mobile.ui.drag.DeleteZone
+			android:id="@+id/delete_zone_view" android:layout_width="fill_parent"
+			android:layout_height="60dp" android:layout_alignParentBottom="true"
+			android:layout_centerInParent="true" android:background="@drawable/delete_zone_bg"
+			android:visibility="gone">
+			<ImageView android:layout_width="60dp"
+				android:layout_height="60dp" android:layout_centerInParent="true"
+				android:src="@drawable/trashcan" />
+		</com.neudesic.mobile.ui.drag.DeleteZone>
+	</com.neudesic.mobile.ui.drag.DragLayer>
+</LinearLayout>
