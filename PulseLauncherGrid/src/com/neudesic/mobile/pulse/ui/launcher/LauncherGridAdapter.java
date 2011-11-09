@@ -1,5 +1,6 @@
 package com.neudesic.mobile.pulse.ui.launcher;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.res.Resources.NotFoundException;
 import android.graphics.drawable.Drawable;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -212,6 +214,9 @@ public class LauncherGridAdapter extends BaseAdapter implements
 	}
 
 //	public abstract View getView(int position, View convertView, ViewGroup parent);
+	/* (non-Javadoc)
+	 * @see android.widget.Adapter#getView(int, android.view.View, android.view.ViewGroup)
+	 */
 	public View getView(int position, View convertView, ViewGroup parent) {
 		ImageView imageView;
 		if (convertView == null) {
@@ -237,9 +242,13 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		layout.setItem(item);
 		layout.setDragListener(this);
 		// holder.image.setOnLongClickListener(this);
-		if (item.getUrl() == null) {
-			holder.image.setImageDrawable(context.getResources().getDrawable(
-					item.getDrawable()));
+		if (!item.getUrl().startsWith("http")) {
+			
+			try {
+				holder.image.setImageDrawable(context.getResources().getDrawable(context.getResources().getIdentifier(context.getApplicationContext().getPackageName() + ":drawable/" +item.getUrl(), null, null)));
+			} catch (NotFoundException e) {
+				holder.image.setImageResource(android.R.drawable.ic_menu_view);
+			}
 		} else {
 			Drawable d = holder.image.getDrawable();
 
@@ -260,7 +269,16 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		layout.canDelete(item.canDelete());
 		return convertView;
 	}
+	public static int getResId(String variableName, Context context, Class<?> c) {
 
+	    try {
+	        Field idField = c.getDeclaredField(variableName);
+	        return idField.getInt(idField);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return -1;
+	    } 
+	}
 	public List<LauncherGridItem> getItems() {
 		return items;
 	}

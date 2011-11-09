@@ -69,6 +69,7 @@ public class DrawableManager {
 
 	public Drawable fetchDrawable(String urlString) {
 		if (drawableMap.containsKey(urlString)) {
+			Log.d(getClass().getSimpleName(), "loading image from localcache");
 			return drawableMap.get(urlString);
 		}
 
