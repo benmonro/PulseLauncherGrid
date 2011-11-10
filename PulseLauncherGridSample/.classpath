@@ -7,6 +7,6 @@
 	<classpathentry kind="lib" path="/PulseLauncherGrid/libs/commons-io-1.4.jar"/>
 	<classpathentry kind="lib" path="/PulseLauncherGrid/libs/jackson-core-asl-1.5.4.jar"/>
 	<classpathentry kind="lib" path="/PulseLauncherGrid/libs/jackson-mapper-asl-1.5.4.jar"/>
-	<classpathentry kind="lib" path="/PulseLauncherGrid/libs/joda-time-1.6.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/PulseLauncherGrid"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

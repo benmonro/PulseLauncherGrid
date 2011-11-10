@@ -128,17 +128,17 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		}
 
 		dragController.setDragListener(dragLayer);
-		loadWebImageCache(items);
+		loadWebImageCache();
 	}
 
-	private void loadWebImageCache(List<LauncherGridItem> items) {
+	public void loadWebImageCache() {
 		imageLoader = new LoadThumbsTask();
-		images = new ArrayList<Image>(items.size()); 
-		for (int i = 0; i < items.size(); i++) {
-			Image image = new Image();
-			image.url = items.get(i).getUrl();
-			images.add(image);
-		}
+//		images = new ArrayList<Image>(items.size()); 
+//		for (int i = 0; i < items.size(); i++) {
+//			Image image = new Image();
+//			image.url = items.get(i).getUrl();
+//			images.add(image);
+//		}
 		imageLoader.execute(null);
 	}
 
@@ -204,7 +204,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 						prefs.getString(getPersistenceToken(), ""),
 						LauncherGridItemList.class);
 				this.items = list.getItems();
-				loadWebImageCache(items);
+				loadWebImageCache();
 				this.notifyDataSetChanged();
 				return true;
 			} catch (Exception e) {
@@ -281,14 +281,14 @@ public class LauncherGridAdapter extends BaseAdapter implements
 				holder.image.setImageResource(android.R.drawable.ic_menu_view);
 			}
 		} else {
-			Image cached = images.get(position);
-			if(cached.thumb == null)
+//			Image cached = images.get(position);
+			if(item.getImage() == null)
 			{
 				holder.image.setImageResource(R.drawable.avatar);
 			} else {
 
-				holder.image.setScaleType(ScaleType.FIT_CENTER);
-				holder.image.setImageBitmap(cached.thumb);
+				holder.image.setScaleType(ScaleType.CENTER_INSIDE);
+				holder.image.setImageBitmap(item.getImage());
 			}
 //			String imageUrl = item.getUrl();
 //			if (holder.image.getDrawable() == null) {
@@ -386,12 +386,12 @@ public class LauncherGridAdapter extends BaseAdapter implements
 				}
 
 				LauncherGridItem item = getItems().remove(removeFrom);
-				Image img = images.remove(removeFrom);
+//				Image img = images.remove(removeFrom);
 				if (insertAt >= getItems().size()) {
 					insertAt = getItems().size();
 				}
 				getItems().add(insertAt, item);
-				images.add(insertAt, img);
+//				images.add(insertAt, img);
 			}
 			this.notifyDataSetInvalidated();
 			this.persist();
@@ -513,7 +513,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 
 
 	// an array of resources we want to display
-	private ArrayList<Image> images;
+//	private ArrayList<Image> images;
 	
 	// the class that will create a background thread and generate thumbs
 	private class LoadThumbsTask extends AsyncTask<Void, Void, Void> {
@@ -531,21 +531,21 @@ public class LauncherGridAdapter extends BaseAdapter implements
 			opts.inSampleSize = 4;
 
 			// iterate over all images ...
-			for (Image i : images) {
+			for (LauncherGridItem i : items) {
 
 				// if our task has been cancelled then let's stop processing
 				if(isCancelled()) return null;
 
 				// skip a thumb if it's already been generated
-				if(i.thumb != null) continue;
+				if(i.getImage() != null) continue;
 
 				// artificially cause latency!
 				SystemClock.sleep(500);
 				
 				// download and generate a thumb for this image
-				if(i.url.startsWith("http"))
+				if(i.getUrl().startsWith("http"))
 				{
-					i.thumb = loadThumb(i.url);
+					i.setImage(loadThumb(i.getUrl()));
 				}
 				// some unit of work has been completed, update the UI
 				publishProgress();

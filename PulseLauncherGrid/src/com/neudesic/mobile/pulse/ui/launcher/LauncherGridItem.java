@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import org.codehaus.jackson.annotate.JsonIgnore;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 
 public class LauncherGridItem {
 	private String caption;
@@ -13,6 +14,7 @@ public class LauncherGridItem {
 	// private Intent intent;
 	private boolean deletable;
 	private String intentUrl;
+	private Bitmap image;
 
 	public LauncherGridItem() {
 	}
@@ -152,5 +154,17 @@ public class LauncherGridItem {
 
 	public void setDeletable(boolean deletable) {
 		this.deletable = deletable;
+	}
+
+	@JsonIgnore
+	public Bitmap getImage() {
+		// TODO Auto-generated method stub
+		return image;
+	}
+
+	@JsonIgnore
+	public void setImage(Bitmap image) {
+		this.image = image;
+		
 	}
 }
