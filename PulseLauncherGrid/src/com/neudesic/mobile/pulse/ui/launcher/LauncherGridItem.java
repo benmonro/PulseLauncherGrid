@@ -23,20 +23,20 @@ public class LauncherGridItem {
 
 	}
 
-	public LauncherGridItem(int drawableId, String caption) {
-		this.drawableId = drawableId;
-		this.caption = caption;
-		// TODO Auto-generated constructor stub
-	}
+//	public LauncherGridItem(int drawableId, String caption) {
+//		this.drawableId = drawableId;
+//		this.caption = caption;
+//		// TODO Auto-generated constructor stub
+//	}
 
-	public LauncherGridItem(Integer drawable, String caption, Intent intent) {
-		this.drawableId = drawable;
-		// TODO Auto-generated constructor stub
-		this.caption = caption;
-		// this.intent = intent;
-		this.setIntentUrl(intent.toUri(Intent.URI_INTENT_SCHEME).toString());
-		this.setDeletable(false);
-	}
+//	public LauncherGridItem(Integer drawable, String caption, Intent intent) {
+//		this.drawableId = drawable;
+//		// TODO Auto-generated constructor stub
+//		this.caption = caption;
+//		// this.intent = intent;
+//		this.setIntentUrl(intent.toUri(Intent.URI_INTENT_SCHEME).toString());
+//		this.setDeletable(false);
+//	}
 
 	public LauncherGridItem(String imageUrl, String caption, Intent intent) {
 		this.imageUrl = imageUrl;

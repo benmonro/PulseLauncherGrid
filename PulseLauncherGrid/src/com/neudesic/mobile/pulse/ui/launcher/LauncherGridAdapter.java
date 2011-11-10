@@ -1,6 +1,11 @@
 package com.neudesic.mobile.pulse.ui.launcher;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +20,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.Resources.NotFoundException;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -26,6 +35,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -47,16 +57,13 @@ public class LauncherGridAdapter extends BaseAdapter implements
 	@JsonIgnore
 	private LayoutInflater inflater;
 
-	@JsonIgnore
-	private ViewHolder holder;
+	// @JsonIgnore
+	// private ViewHolder holder;
 
 	@JsonProperty("items")
 	private List<LauncherGridItem> items;
 
-	@JsonIgnore
-	private DrawableManager drawableManager;
 
-	
 	@JsonIgnore
 	private GridView iconGrid;
 
@@ -71,7 +78,9 @@ public class LauncherGridAdapter extends BaseAdapter implements
 
 	@JsonIgnore
 	private boolean editable = true;
-	
+
+	private LoadThumbsTask imageLoader;
+
 	private static ObjectMapper mapper;
 
 	static class ViewHolder {
@@ -89,7 +98,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 			GridView iconGrid, DragLayer dragLayer) {
 		this(c, items, iconGrid, dragLayer, null);
 	}
-	
+
 	public LauncherGridAdapter(Context c, List<LauncherGridItem> items,
 			GridView iconGrid, DragLayer dragLayer, DeleteZone deleteZone) {
 		context = c;
@@ -100,16 +109,17 @@ public class LauncherGridAdapter extends BaseAdapter implements
 				.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		setMapper(new ObjectMapper());
 
-		getMapper().configure(
-				DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		getMapper()
+				.configure(
+						DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES,
+						false);
 
-		this.setDrawableManager(new DrawableManager(c));
 
 		dragController = new DragController(context);
 		this.dragLayer = dragLayer;
 		this.dragLayer.setDragController(dragController);
 		this.dragLayer.setGridView(iconGrid);
-		
+
 		if (deleteZone != null) {
 			this.deleteZone = deleteZone;
 			this.deleteZone.setOnItemDeleted(this);
@@ -117,17 +127,21 @@ public class LauncherGridAdapter extends BaseAdapter implements
 			this.dragLayer.setDeleteZoneId(deleteZone.getId());
 		}
 
-
 		dragController.setDragListener(dragLayer);
-
-	}
-	
-	public void setDefaultHttpClient(DefaultHttpClient client)
-	{
-		this.drawableManager.setHttpClient(client);
+		loadWebImageCache(items);
 	}
 
-	
+	private void loadWebImageCache(List<LauncherGridItem> items) {
+		imageLoader = new LoadThumbsTask();
+		images = new ArrayList<Image>(items.size()); 
+		for (int i = 0; i < items.size(); i++) {
+			Image image = new Image();
+			image.url = items.get(i).getUrl();
+			images.add(image);
+		}
+		imageLoader.execute(null);
+	}
+
 	public void persist() {
 		LauncherGridItemList list = new LauncherGridItemList(this.items);
 		SharedPreferences prefs = PreferenceManager
@@ -144,11 +158,9 @@ public class LauncherGridAdapter extends BaseAdapter implements
 
 		editor.commit();
 	}
-	
 
-
-	public static void persist(Context context, String persistenceToken, List<LauncherGridItem> items)
-	{
+	public static void persist(Context context, String persistenceToken,
+			List<LauncherGridItem> items) {
 		LauncherGridItemList list = new LauncherGridItemList(items);
 		SharedPreferences prefs = PreferenceManager
 				.getDefaultSharedPreferences(context);
@@ -164,9 +176,9 @@ public class LauncherGridAdapter extends BaseAdapter implements
 
 		editor.commit();
 	}
-	
-	public static List<LauncherGridItem> loadItems(Context context, String persistenceToken)
-	{
+
+	public static List<LauncherGridItem> loadItems(Context context,
+			String persistenceToken) {
 		SharedPreferences prefs = PreferenceManager
 				.getDefaultSharedPreferences(context);
 		if (prefs.contains(persistenceToken)) {
@@ -177,7 +189,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 						LauncherGridItemList.class);
 				return list.getItems();
 			} catch (Exception e) {
-				
+
 			}
 		}
 		return new ArrayList<LauncherGridItem>();
@@ -192,6 +204,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 						prefs.getString(getPersistenceToken(), ""),
 						LauncherGridItemList.class);
 				this.items = list.getItems();
+				loadWebImageCache(items);
 				this.notifyDataSetChanged();
 				return true;
 			} catch (Exception e) {
@@ -213,15 +226,22 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		return position;
 	}
 
-//	public abstract View getView(int position, View convertView, ViewGroup parent);
-	/* (non-Javadoc)
-	 * @see android.widget.Adapter#getView(int, android.view.View, android.view.ViewGroup)
+	// public abstract View getView(int position, View convertView, ViewGroup
+	// parent);
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see android.widget.Adapter#getView(int, android.view.View,
+	 * android.view.ViewGroup)
 	 */
 	public View getView(int position, View convertView, ViewGroup parent) {
 		ImageView imageView;
+		ViewHolder holder;
+
 		if (convertView == null) {
 			convertView = inflater
 					.inflate(R.layout.grid_view_item_layout, null);
+
 			holder = new ViewHolder();
 
 			holder.image = (ImageView) convertView
@@ -230,7 +250,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 					.findViewById(R.id.selection_item_text);
 
 			convertView.setTag(holder);
-			// imageView.setPadding(8, 8, 8, 8);
+			//holder.image.setPadding(8, 8, 8, 8);
 		} else {
 			holder = (ViewHolder) convertView.getTag();
 		}
@@ -242,25 +262,39 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		layout.setItem(item);
 		layout.setDragListener(this);
 		// holder.image.setOnLongClickListener(this);
+		Drawable d = holder.image.getDrawable();
+		// if (d != null) {
+		d.setCallback(null);
+		// }
+		holder.image.setImageDrawable(null);
 		if (!item.getUrl().startsWith("http")) {
-			
+
 			try {
-				holder.image.setImageDrawable(context.getResources().getDrawable(context.getResources().getIdentifier(context.getApplicationContext().getPackageName() + ":drawable/" +item.getUrl(), null, null)));
+				holder.image.setImageDrawable(context.getResources()
+						.getDrawable(
+								context.getResources().getIdentifier(
+										context.getApplicationContext()
+												.getPackageName()
+												+ ":drawable/" + item.getUrl(),
+										null, null)));
 			} catch (NotFoundException e) {
 				holder.image.setImageResource(android.R.drawable.ic_menu_view);
 			}
 		} else {
-			Drawable d = holder.image.getDrawable();
+			Image cached = images.get(position);
+			if(cached.thumb == null)
+			{
+				holder.image.setImageResource(R.drawable.avatar);
+			} else {
 
-			// holder.authorImage.setImageBitmap(null);
-			if (d != null) {
-				d.setCallback(null);
+				holder.image.setScaleType(ScaleType.FIT_CENTER);
+				holder.image.setImageBitmap(cached.thumb);
 			}
-			String imageUrl = item.getUrl();
-
-			holder.image.setImageResource(R.drawable.avatar);
-			getDrawableManager()
-					.fetchDrawableOnThread(imageUrl, holder.image);
+//			String imageUrl = item.getUrl();
+//			if (holder.image.getDrawable() == null) {
+//				getDrawableManager().fetchDrawableOnThread(imageUrl,
+//						holder.image);
+//			}
 		}
 		holder.text.setText(item.getCaption());
 		layout.setImage(holder.image);
@@ -269,16 +303,18 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		layout.canDelete(item.canDelete());
 		return convertView;
 	}
+
 	public static int getResId(String variableName, Context context, Class<?> c) {
 
-	    try {
-	        Field idField = c.getDeclaredField(variableName);
-	        return idField.getInt(idField);
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return -1;
-	    } 
+		try {
+			Field idField = c.getDeclaredField(variableName);
+			return idField.getInt(idField);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return -1;
+		}
 	}
+
 	public List<LauncherGridItem> getItems() {
 		return items;
 	}
@@ -330,7 +366,8 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		Log.d(LAUNCHER_GRID_LOG, "Drag completed");
 		if (success && source != target) {
 
-			LauncherGridItem sourceItem = ((DraggableRelativeLayout) source).getItem();
+			LauncherGridItem sourceItem = ((DraggableRelativeLayout) source)
+					.getItem();
 			if (target instanceof DeleteZone) {
 				if (sourceItem.canDelete()) {
 					this.getItems().remove(sourceItem);
@@ -349,10 +386,12 @@ public class LauncherGridAdapter extends BaseAdapter implements
 				}
 
 				LauncherGridItem item = getItems().remove(removeFrom);
+				Image img = images.remove(removeFrom);
 				if (insertAt >= getItems().size()) {
 					insertAt = getItems().size();
 				}
 				getItems().add(insertAt, item);
+				images.add(insertAt, img);
 			}
 			this.notifyDataSetInvalidated();
 			this.persist();
@@ -392,7 +431,6 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		this.persistenceToken = persistenceToken;
 	}
 
-
 	@JsonIgnore
 	public boolean isEditable() {
 		return editable;
@@ -403,29 +441,129 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		this.editable = editable;
 	}
 
-	@JsonIgnore
-	public DrawableManager getDrawableManager() {
-		return drawableManager;
-	}
 
-	@JsonIgnore
-	public void setDrawableManager(DrawableManager drawableManager) {
-		this.drawableManager = drawableManager;
-	}
 
 	public static ObjectMapper getMapper() {
-		if(mapper == null)
-		{
+		if (mapper == null) {
 			mapper = new ObjectMapper();
 
 			mapper.configure(
-					DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+					DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES,
+					false);
 		}
 		return mapper;
 	}
 
 	public static void setMapper(ObjectMapper mapper) {
 		LauncherGridAdapter.mapper = mapper;
+	}
+	
+
+
+	/**
+	 * Download and return a thumb specified by url, subsampling 
+	 * it to a smaller size.
+	 */
+	private Bitmap loadThumb(String url) {
+
+		// the downloaded thumb (none for now!)
+		Bitmap thumb = null;
+
+		// sub-sampling options
+		BitmapFactory.Options opts = new BitmapFactory.Options();
+		opts.inSampleSize = 4;
+
+		try {
+
+			// open a connection to the URL
+			// Note: pay attention to permissions in the Manifest file!
+			URL u = new URL(url);
+			URLConnection c = u.openConnection();
+			c.connect();
+			
+			// read data
+			BufferedInputStream stream = new BufferedInputStream(c.getInputStream());
+			BitmapFactory.Options ops = new BitmapFactory.Options();
+			ops.inJustDecodeBounds = false;
+			thumb = BitmapFactory.decodeStream(stream, null, ops);
+			// decode the data, subsampling along the way
+			//thumb = BitmapFactory.decodeStream(stream, null, opts);
+
+			// close the stream
+			stream.close();
+
+		} catch (MalformedURLException e) {
+			Log.e("Threads03", "malformed url: " + url);
+		} catch (IOException e) {
+			Log.e("Threads03", "An error has occurred downloading the image: " + url);
+		}
+
+		// return the fetched thumb (or null, if error)
+		return thumb;
+	}
+	// an object we'll use to keep our cache data together
+	private class Image {
+		String url;
+		Bitmap thumb;
+	}
+	
+	private void cacheUpdated() {
+		this.notifyDataSetChanged();
+	}
+
+
+	// an array of resources we want to display
+	private ArrayList<Image> images;
+	
+	// the class that will create a background thread and generate thumbs
+	private class LoadThumbsTask extends AsyncTask<Void, Void, Void> {
+
+		/**
+		 * Generate thumbs for each of the Image objects in the array
+		 * passed to this method. This method is run in a background task.
+		 */
+		@Override
+		protected Void doInBackground(Void... cache) {
+
+			
+			// define the options for our bitmap subsampling 
+			BitmapFactory.Options opts = new BitmapFactory.Options();
+			opts.inSampleSize = 4;
+
+			// iterate over all images ...
+			for (Image i : images) {
+
+				// if our task has been cancelled then let's stop processing
+				if(isCancelled()) return null;
+
+				// skip a thumb if it's already been generated
+				if(i.thumb != null) continue;
+
+				// artificially cause latency!
+				SystemClock.sleep(500);
+				
+				// download and generate a thumb for this image
+				if(i.url.startsWith("http"))
+				{
+					i.thumb = loadThumb(i.url);
+				}
+				// some unit of work has been completed, update the UI
+				publishProgress();
+			}
+			
+			return null;
+		}
+
+
+		/**
+		 * Update the UI thread when requested by publishProgress()
+		 */
+		@Override
+		protected void onProgressUpdate(Void... param) {
+			cacheUpdated();
+		}
+		
+		
 	}
 
 }

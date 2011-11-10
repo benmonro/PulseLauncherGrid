@@ -39,7 +39,9 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
+import android.webkit.DownloadListener;
 import android.widget.ImageView;
 
 
@@ -63,11 +65,11 @@ public class DrawableManager {
 		//change this to whatever avatar you want as the default loading avatar.
 		emptyAvatar = context.getResources().getDrawable(android.R.drawable.ic_menu_view);
 
-
+		
 
 	}
 
-	public Drawable fetchDrawable(String urlString) {
+	public synchronized Drawable fetchDrawable(String urlString) {
 		if (drawableMap.containsKey(urlString)) {
 			Log.d(getClass().getSimpleName(), "loading image from localcache");
 			return drawableMap.get(urlString);
@@ -101,11 +103,13 @@ public class DrawableManager {
 	public void fetchDrawableOnThread(final String urlString,
 			final ImageView imageView) {
 
+
 		final Handler handler = new Handler() {
 			@Override
 			public void handleMessage(Message message) {
 				try {
 					imageView.setImageDrawable((Drawable) message.obj);
+					
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
