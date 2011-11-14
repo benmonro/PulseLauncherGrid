@@ -9,7 +9,6 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.DeserializationConfig;
@@ -39,7 +38,6 @@ import android.widget.ImageView.ScaleType;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.neudesic.mobile.pulse.ui.drawable.DrawableManager;
 import com.neudesic.mobile.ui.drag.DeleteLaunchItemHandler;
 import com.neudesic.mobile.ui.drag.DeleteZone;
 import com.neudesic.mobile.ui.drag.DragController;
@@ -132,6 +130,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 	}
 
 	public void loadWebImageCache() {
+
 		imageLoader = new LoadThumbsTask();
 //		images = new ArrayList<Image>(items.size()); 
 //		for (int i = 0; i < items.size(); i++) {
@@ -141,6 +140,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 //		}
 		imageLoader.execute(null);
 	}
+
 
 	public void persist() {
 		LauncherGridItemList list = new LauncherGridItemList(this.items);
@@ -235,7 +235,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 	 * android.view.ViewGroup)
 	 */
 	public View getView(int position, View convertView, ViewGroup parent) {
-		ImageView imageView;
+
 		ViewHolder holder;
 
 		if (convertView == null) {
@@ -501,11 +501,7 @@ public class LauncherGridAdapter extends BaseAdapter implements
 		// return the fetched thumb (or null, if error)
 		return thumb;
 	}
-	// an object we'll use to keep our cache data together
-	private class Image {
-		String url;
-		Bitmap thumb;
-	}
+
 	
 	private void cacheUpdated() {
 		this.notifyDataSetChanged();
@@ -514,9 +510,12 @@ public class LauncherGridAdapter extends BaseAdapter implements
 
 	// an array of resources we want to display
 //	private ArrayList<Image> images;
-	
+	private static byte[] syncObject = new byte[0];
 	// the class that will create a background thread and generate thumbs
 	private class LoadThumbsTask extends AsyncTask<Void, Void, Void> {
+
+
+
 
 		/**
 		 * Generate thumbs for each of the Image objects in the array
@@ -530,27 +529,30 @@ public class LauncherGridAdapter extends BaseAdapter implements
 			BitmapFactory.Options opts = new BitmapFactory.Options();
 			opts.inSampleSize = 4;
 
-			// iterate over all images ...
-			for (LauncherGridItem i : items) {
+			synchronized (syncObject) {
+				// iterate over all images ...
+//				for (LauncherGridItem item : items) {
+				for (int i = 0; i < items.size(); i++) {
+					LauncherGridItem item = items.get(i);
+					// if our task has been cancelled then let's stop processing
+					if (isCancelled())
+						return null;
 
-				// if our task has been cancelled then let's stop processing
-				if(isCancelled()) return null;
+					// skip a thumb if it's already been generated
+					if (item.getImage() != null)
+						continue;
 
-				// skip a thumb if it's already been generated
-				if(i.getImage() != null) continue;
+					// artificially cause latency!
+					SystemClock.sleep(500);
 
-				// artificially cause latency!
-				SystemClock.sleep(500);
-				
-				// download and generate a thumb for this image
-				if(i.getUrl().startsWith("http"))
-				{
-					i.setImage(loadThumb(i.getUrl()));
+					// download and generate a thumb for this image
+					if (item.getUrl().startsWith("http")) {
+						item.setImage(loadThumb(item.getUrl()));
+					}
+					// some unit of work has been completed, update the UI
+					publishProgress();
 				}
-				// some unit of work has been completed, update the UI
-				publishProgress();
 			}
-			
 			return null;
 		}
 
